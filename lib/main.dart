@@ -5787,6 +5787,50 @@ class _ReportsPageState
 
   String search = '';
 
+  DateTime? startDate;
+  DateTime? endDate;
+
+  Future<void> selectStartDate() async {
+  final selected = await showDatePicker(
+    context: context,
+    initialDate:
+        startDate ?? DateTime.now(),
+    firstDate: DateTime(2020),
+    lastDate: DateTime(2100),
+  );
+
+  if (selected != null) {
+    setState(() {
+      startDate = selected;
+
+      if (endDate != null &&
+          endDate!.isBefore(selected)) {
+        endDate = selected;
+      }
+    });
+  }
+}
+
+Future<void> selectEndDate() async {
+  final selected = await showDatePicker(
+    context: context,
+    initialDate:
+        endDate ??
+        startDate ??
+        DateTime.now(),
+    firstDate:
+        startDate ?? DateTime(2020),
+    lastDate: DateTime(2100),
+  );
+
+  if (selected != null) {
+    setState(() {
+      endDate = selected;
+    });
+  }
+}
+
+
   @override
   Widget build(
     BuildContext context,
@@ -5909,6 +5953,115 @@ class _ReportsPageState
             ),
 
             const SizedBox(height: 12),
+
+            if (viewMode ==
+    'Movimientos') ...[
+  Card(
+    child: Padding(
+      padding:
+          const EdgeInsets.all(
+        12,
+      ),
+      child: Column(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '📅 Consultar por fecha',
+            style: TextStyle(
+              fontWeight:
+                  FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+
+          const SizedBox(
+            height: 10,
+          ),
+
+          Row(
+            children: [
+              Expanded(
+                child:
+                    OutlinedButton.icon(
+                  onPressed:
+                      selectStartDate,
+                  icon:
+                      const Icon(
+                    Icons
+                        .calendar_today,
+                  ),
+                  label: Text(
+                    startDate == null
+                        ? 'Desde'
+                        : formatDate(
+                            startDate!,
+                          ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(
+                width: 8,
+              ),
+
+              Expanded(
+                child:
+                    OutlinedButton.icon(
+                  onPressed:
+                      selectEndDate,
+                  icon:
+                      const Icon(
+                    Icons
+                        .event_available,
+                  ),
+                  label: Text(
+                    endDate == null
+                        ? 'Hasta'
+                        : formatDate(
+                            endDate!,
+                          ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          if (startDate != null ||
+              endDate != null) ...[
+            const SizedBox(
+              height: 8,
+            ),
+            Align(
+              alignment:
+                  Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () {
+                  setState(() {
+                    startDate = null;
+                    endDate = null;
+                  });
+                },
+                icon:
+                    const Icon(
+                  Icons.clear,
+                ),
+                label:
+                    const Text(
+                  'Limpiar fechas',
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    ),
+  ),
+
+  const SizedBox(
+    height: 12,
+  ),
+],
 
             if (viewMode ==
                 'Movimientos')
@@ -6059,9 +6212,38 @@ class _ReportsPageState
   }
 
   Widget buildSales() {
+
     final items =
         appStore.sales.where(
       (sale) {
+
+        if (startDate != null &&
+          sale.date.isBefore(
+          DateTime(
+          startDate!.year,
+          startDate!.month,
+          startDate!.day,
+        ),
+      )) {
+    return false;
+}
+
+    if (endDate != null) {
+      final endOfDay = DateTime(
+      endDate!.year,
+      endDate!.month,
+      endDate!.day,
+      23,
+      59,
+      59,
+    );
+
+    if (sale.date.isAfter(
+      endOfDay,
+    )) {
+    return false;
+    }
+  }
         if (paymentFilter !=
                 'Todas' &&
             sale.paymentMethod !=
@@ -6114,59 +6296,88 @@ class _ReportsPageState
   }
 
   Widget buildExpenses() {
-    final items =
-        appStore.expenses.where(
-      (expense) {
-        if (paymentFilter !=
-                'Todas' &&
-            expense.paymentMethod !=
-                paymentFilter) {
+  final items =
+      appStore.expenses.where(
+    (expense) {
+      if (startDate != null &&
+          expense.date.isBefore(
+            DateTime(
+              startDate!.year,
+              startDate!.month,
+              startDate!.day,
+            ),
+          )) {
+        return false;
+      }
+
+      if (endDate != null) {
+        final endOfDay =
+            DateTime(
+          endDate!.year,
+          endDate!.month,
+          endDate!.day,
+          23,
+          59,
+          59,
+        );
+
+        if (expense.date.isAfter(
+          endOfDay,
+        )) {
           return false;
         }
+      }
 
-        if (search.isEmpty) {
-          return true;
-        }
+      if (paymentFilter !=
+              'Todas' &&
+          expense.paymentMethod !=
+              paymentFilter) {
+        return false;
+      }
 
-        return expense.provider
-                .toLowerCase()
-                .contains(search) ||
-            expense.items.any(
-              (item) =>
-                  item.description
-                      .toLowerCase()
-                      .contains(search),
-            );
-      },
-    ).toList()
-          ..sort(
-            (a, b) =>
-                b.date.compareTo(
-              a.date,
-            ),
+      if (search.isEmpty) {
+        return true;
+      }
+
+      return expense.provider
+              .toLowerCase()
+              .contains(search) ||
+          expense.items.any(
+            (item) =>
+                item.description
+                    .toLowerCase()
+                    .contains(search),
           );
+    },
+  ).toList()
+        ..sort(
+          (a, b) =>
+              b.date.compareTo(
+            a.date,
+          ),
+        );
 
-    if (items.isEmpty) {
-      return const EmptyState(
-        icon: Icons.search_off,
-        title:
-            'No se encontraron compras',
-        subtitle:
-            'Cambia los filtros.',
-      );
-    }
-
-    return Column(
-      children: items
-          .map(
-            (expense) =>
-                ExpenseReportCard(
-              expense: expense,
-            ),
-          )
-          .toList(),
+  if (items.isEmpty) {
+    return const EmptyState(
+      icon: Icons.search_off,
+      title:
+          'No se encontraron compras',
+      subtitle:
+          'Cambia los filtros o las fechas.',
     );
   }
+
+  return Column(
+    children: items
+        .map(
+          (expense) =>
+              ExpenseReportCard(
+            expense: expense,
+          ),
+        )
+        .toList(),
+  );
+}
 
   Widget buildCustomers() {
     final items =
@@ -6656,7 +6867,7 @@ class ExpenseReportCard
                       'Registrar abono',
                     ),
                   ),
-                  
+
               ],
             ),
           ],
