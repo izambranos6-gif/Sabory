@@ -2692,8 +2692,7 @@ class HomePage
 // COMIDAS
 // ============================================================
 
-class ProductsPage
-    extends StatelessWidget {
+class ProductsPage extends StatelessWidget {
   const ProductsPage({
     super.key,
   });
@@ -2707,66 +2706,63 @@ class ProductsPage
       builder: (context, _) {
         return Scaffold(
           floatingActionButton:
-              FloatingActionButton
-                  .extended(
-            onPressed: () {
-              showDialog(
+              FloatingActionButton.extended(
+            onPressed: () async {
+              await showDialog(
                 context: context,
                 builder: (_) =>
                     const ProductDialog(),
               );
             },
-            icon:
-                const Icon(Icons.add),
+            icon: const Icon(
+              Icons.add,
+            ),
             label: const Text(
               'Nuevo producto',
             ),
           ),
-          body:
-              appStore.products.isEmpty
-                  ? const EmptyState(
-                      icon:
-                          Icons.restaurant,
+          body: appStore.products.isEmpty
+              ? const EmptyState(
+                  icon: Icons.restaurant,
+                  title: 'No hay productos',
+                  subtitle:
+                      'Registra comidas, bebidas y adicionales.',
+                )
+              : ListView(
+                  padding:
+                      const EdgeInsets.fromLTRB(
+                    16,
+                    16,
+                    16,
+                    90,
+                  ),
+                  children: [
+                    ProductSection(
                       title:
-                          'No hay productos',
-                      subtitle:
-                          'Registra comidas, bebidas y adicionales.',
-                    )
-                  : ListView(
-                      padding:
-                          const EdgeInsets.fromLTRB(
-                        16,
-                        16,
-                        16,
-                        90,
-                      ),
-                      children: const [
-                        ProductSection(
-                          title:
-                              '☕ DESAYUNOS',
-                          category:
-                              'Desayuno',
-                        ),
-                        ProductSection(
-                          title:
-                              '🍛 ALMUERZOS COMPLETOS',
-                          category:
-                              'Almuerzo',
-                        ),
-                        ProductSection(
-                          title:
-                              '🍽️ PLATOS A LA CARTA',
-                          category:
-                              'Platos a la carta',
-                        ),
-                        ProductSection(
-                          title:
-                              '🥤 BEBIDAS / ADICIONALES',
-                          category:
-                              'Bebidas / Adicionales',
-                        ),
-                      ],
+                          '☕ DESAYUNOS',
+                      category:
+                          'Desayuno',
                     ),
+                    ProductSection(
+                      title:
+                          '🍛 ALMUERZOS COMPLETOS',
+                      category:
+                          'Almuerzo',
+                    ),
+                    ProductSection(
+                      title:
+                          '🍽️ PLATOS A LA CARTA',
+                      category:
+                          'Platos a la carta',
+                    ),
+                    ProductSection(
+                      title:
+                          '🥤 BEBIDAS / ADICIONALES',
+                      category:
+                          'Bebidas / Adicionales',
+                    ),
+                  ],
+                ),
         );
       },
     );
@@ -6301,12 +6297,16 @@ class SaleReportCard
     BuildContext context,
   ) {
     final account =
-        sale.paymentMethod ==
-                'Fiado'
+        sale.paymentMethod == 'Fiado'
             ? appStore.findReceivable(
                 sale.person,
               )
             : null;
+
+    final hasPendingDebt =
+        sale.paymentMethod == 'Fiado' &&
+            account != null &&
+            account.balance > 0;
 
     return Card(
       child: Padding(
@@ -6325,6 +6325,7 @@ class SaleReportCard
                     '🧾 Venta #${sale.id}',
                     style:
                         const TextStyle(
+                      fontSize: 17,
                       fontWeight:
                           FontWeight.bold,
                     ),
@@ -6334,11 +6335,16 @@ class SaleReportCard
                   money(sale.total),
                   style:
                       const TextStyle(
+                    fontSize: 17,
                     fontWeight:
                         FontWeight.bold,
                   ),
                 ),
               ],
+            ),
+
+            const SizedBox(
+              height: 4,
             ),
 
             Text(
@@ -6350,6 +6356,10 @@ class SaleReportCard
                 '👤 ${sale.person}',
               ),
 
+            const SizedBox(
+              height: 4,
+            ),
+
             Text(
               '${paymentIcon(sale.paymentMethod)} ${sale.paymentMethod}',
             ),
@@ -6358,22 +6368,103 @@ class SaleReportCard
                     'Fiado' &&
                 account != null) ...[
               const SizedBox(
-                height: 5,
+                height: 7,
               ),
-              Text(
-                account.balance > 0
-                    ? '🔴 Cuenta actual por cobrar: ${money(account.balance)}'
-                    : '✅ Cuenta actual pagada',
-                style: TextStyle(
-                  fontWeight:
-                      FontWeight.bold,
+              Container(
+                width:
+                    double.infinity,
+                padding:
+                    const EdgeInsets.all(
+                  10,
+                ),
+                decoration:
+                    BoxDecoration(
                   color:
                       account.balance > 0
-                          ? Colors.red
-                          : Colors.green,
+                          ? Colors
+                              .red.shade50
+                          : Colors
+                              .green.shade50,
+                  borderRadius:
+                      BorderRadius.circular(
+                    10,
+                  ),
+                ),
+                child: Text(
+                  account.balance > 0
+                      ? '🔴 Por cobrar: ${money(account.balance)}'
+                      : '✅ Cuenta pagada',
+                  style:
+                      TextStyle(
+                    fontWeight:
+                        FontWeight.bold,
+                    color:
+                        account.balance > 0
+                            ? Colors.red
+                            : Colors.green,
+                  ),
                 ),
               ),
             ],
+
+            const SizedBox(
+              height: 12,
+            ),
+
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      barrierDismissible:
+                          false,
+                      builder: (_) =>
+                          SaleDialog(
+                        sale: sale,
+                      ),
+                    );
+                  },
+                  icon:
+                      const Icon(
+                    Icons.edit,
+                  ),
+                  label:
+                      const Text(
+                    'Editar venta',
+                  ),
+                ),
+
+                if (hasPendingDebt)
+                  FilledButton.icon(
+                    onPressed: () {
+                      showDialog(
+                        context:
+                            context,
+                        barrierDismissible:
+                            false,
+                        builder: (_) =>
+                            CustomerAccountDialog(
+                          account:
+                              account,
+                        ),
+                      );
+                    },
+                    icon:
+                        const Icon(
+                      Icons.payments,
+                    ),
+                    label:
+                        const Text(
+                      'Registrar pago',
+                    ),
+                  ),
+
+                
+              ],
+            ),
           ],
         ),
       ),
@@ -6402,6 +6493,12 @@ class ExpenseReportCard
               )
             : null;
 
+    final hasPendingDebt =
+        expense.paymentMethod ==
+                'Fiado' &&
+            account != null &&
+            account.balance > 0;
+
     return Card(
       child: Padding(
         padding:
@@ -6419,20 +6516,28 @@ class ExpenseReportCard
                     '🛒 Compra #${expense.id}',
                     style:
                         const TextStyle(
+                      fontSize: 17,
                       fontWeight:
                           FontWeight.bold,
                     ),
                   ),
                 ),
                 Text(
-                  money(expense.total),
+                  money(
+                    expense.total,
+                  ),
                   style:
                       const TextStyle(
+                    fontSize: 17,
                     fontWeight:
                         FontWeight.bold,
                   ),
                 ),
               ],
+            ),
+
+            const SizedBox(
+              height: 4,
             ),
 
             Text(
@@ -6445,6 +6550,10 @@ class ExpenseReportCard
                 '🏪 ${expense.provider}',
               ),
 
+            const SizedBox(
+              height: 4,
+            ),
+
             Text(
               '${paymentIcon(expense.paymentMethod)} ${expense.paymentMethod}',
             ),
@@ -6453,22 +6562,103 @@ class ExpenseReportCard
                     'Fiado' &&
                 account != null) ...[
               const SizedBox(
-                height: 5,
+                height: 7,
               ),
-              Text(
-                account.balance > 0
-                    ? '🔴 Cuenta actual por pagar: ${money(account.balance)}'
-                    : '✅ Cuenta actual pagada',
-                style: TextStyle(
-                  fontWeight:
-                      FontWeight.bold,
+              Container(
+                width:
+                    double.infinity,
+                padding:
+                    const EdgeInsets.all(
+                  10,
+                ),
+                decoration:
+                    BoxDecoration(
                   color:
                       account.balance > 0
-                          ? Colors.red
-                          : Colors.green,
+                          ? Colors
+                              .red.shade50
+                          : Colors
+                              .green.shade50,
+                  borderRadius:
+                      BorderRadius.circular(
+                    10,
+                  ),
+                ),
+                child: Text(
+                  account.balance > 0
+                      ? '🔴 Por pagar: ${money(account.balance)}'
+                      : '✅ Cuenta pagada',
+                  style:
+                      TextStyle(
+                    fontWeight:
+                        FontWeight.bold,
+                    color:
+                        account.balance > 0
+                            ? Colors.red
+                            : Colors.green,
+                  ),
                 ),
               ),
             ],
+
+            const SizedBox(
+              height: 12,
+            ),
+
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      barrierDismissible:
+                          false,
+                      builder: (_) =>
+                          ExpenseDialog(
+                        expense:
+                            expense,
+                      ),
+                    );
+                  },
+                  icon:
+                      const Icon(
+                    Icons.edit,
+                  ),
+                  label:
+                      const Text(
+                    'Editar compra',
+                  ),
+                ),
+
+                if (hasPendingDebt)
+                  FilledButton.icon(
+                    onPressed: () {
+                      showDialog(
+                        context:
+                            context,
+                        barrierDismissible:
+                            false,
+                        builder: (_) =>
+                            ProviderAccountDialog(
+                          account:
+                              account,
+                        ),
+                      );
+                    },
+                    icon:
+                        const Icon(
+                      Icons.payments,
+                    ),
+                    label:
+                        const Text(
+                      'Registrar abono',
+                    ),
+                  ),
+                  
+              ],
+            ),
           ],
         ),
       ),
