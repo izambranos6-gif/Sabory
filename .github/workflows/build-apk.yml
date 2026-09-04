@@ -1,0 +1,42 @@
+name: Crear APK Sabory
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar proyecto
+        uses: actions/checkout@v4
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Descargar dependencias
+        run: flutter pub get
+
+      - name: Compilar APK
+        run: flutter build apk --release
+
+      - name: Renombrar APK
+        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/Sabory.apk
+
+      - name: Subir APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sabory
+          path: build/app/outputs/flutter-apk/Sabory.apk
