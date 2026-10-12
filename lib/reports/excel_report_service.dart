@@ -548,252 +548,158 @@ class _SaboryReportDialogState extends State<SaboryReportDialog> {
 
 
 
-  Future<void> exportExcel() async {
-
+ Future<void> exportExcel() async {
   final hasSelection =
-
       includeSummary ||
-
       includeSales ||
-
       includeExpenses ||
-
       includeReceivables ||
-
       includePayables ||
-
       includePayments;
 
-
-
   if (!hasSelection) {
-
     showMessage(
-
       context,
-
       'Selecciona al menos una opción para el reporte.',
-
     );
-
     return;
-
   }
-
-
 
   setState(() => exporting = true);
 
-
-
   try {
-
     final range = selectedRange;
-
     final book = xls.Excel.createExcel();
 
-
-
     if (includeSummary) buildSummary(book, range);
-
     if (includeSales) buildSales(book, range);
-
     if (includeExpenses) buildExpenses(book, range);
-
     if (includeReceivables) buildReceivables(book, range);
-
     if (includePayables) buildPayables(book, range);
-
     if (includePayments) buildPayments(book, range);
 
-
-
-    if (book.tables.containsKey('Sheet1') &&
-
-        book.tables.length > 1) {
-
+    if (book.tables.containsKey('Sheet1') && book.tables.length > 1) {
       book.delete('Sheet1');
-
     }
-
-
 
     final bytes = book.encode();
 
-
-
     if (bytes == null) {
-
       throw Exception('No se pudo crear el archivo Excel.');
-
     }
-
-
 
     final stamp =
-
         '${range.start.year}'
-
         '${range.start.month.toString().padLeft(2, '0')}'
-
         '${range.start.day.toString().padLeft(2, '0')}_'
-
         '${range.end.year}'
-
         '${range.end.month.toString().padLeft(2, '0')}'
-
         '${range.end.day.toString().padLeft(2, '0')}';
 
-
-
     final fileName = 'Sabory_Reporte_$stamp.xlsx';
-
     final excelBytes = Uint8List.fromList(bytes);
 
-
-
     if (kIsWeb) {
-
-      // WEB: mantiene la descarga que ya funciona.
-
       await FileSaver.instance.saveFile(
-
         name: 'Sabory_Reporte_$stamp',
-
         bytes: excelBytes,
-
         fileExtension: 'xlsx',
-
         mimeType: MimeType.microsoftExcel,
-
       );
 
-    } else {
-
-      // ANDROID: abre el menú nativo para compartir/guardar.
-
-      await SharePlus.instance.share(
-
-        ShareParams(
-
-          files: [
-
-            XFile.fromData(
-
-              excelBytes,
-
-              mimeType:
-
-                  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-
-            ),
-
-          ],
-
-          fileNameOverrides: [fileName],
-
-          subject: 'Reporte Sabory',
-
-          text: 'Reporte generado desde Sabory.',
-
-        ),
-
-      );
-
-    }
-
-
-
-    if (mounted) {
+      if (!mounted) return;
 
       await showDialog<void>(
-
         context: context,
-
         builder: (dialogContext) => AlertDialog(
-
           title: const Row(
-
             children: [
-
-              Icon(
-
-                Icons.check_circle_outline,
-
-                color: Colors.green,
-
-              ),
-
+              Icon(Icons.check_circle_outline, color: Colors.green),
               SizedBox(width: 10),
-
-              Expanded(
-
-                child: Text('Reporte generado'),
-
-              ),
-
+              Expanded(child: Text('Reporte generado')),
             ],
-
           ),
-
           content: Text(
-
-            kIsWeb
-
-                ? 'Excel generado correctamente: $fileName'
-
-                : 'El reporte fue generado correctamente. '
-
-                    'Puedes guardarlo o compartirlo desde las opciones de tu teléfono.',
-
+            'Excel generado correctamente:\n\n$fileName',
             style: const TextStyle(fontSize: 16),
-
           ),
-
           actions: [
-
             FilledButton(
-
               onPressed: () => Navigator.pop(dialogContext),
-
               child: const Text('Aceptar'),
-
             ),
-
           ],
-
         ),
-
+      );
+    } else {
+      await FileSaver.instance.saveToDownloads(
+        name: 'Sabory_Reporte_$stamp',
+        bytes: excelBytes,
+        fileExtension: 'xlsx',
+        mimeType: MimeType.microsoftExcel,
+        subfolder: 'Sabory/Reportes',
       );
 
-    }
+      if (!mounted) return;
 
+      final shareFile = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.check_circle_outline, color: Colors.green),
+              SizedBox(width: 10),
+              Expanded(child: Text('Reporte guardado')),
+            ],
+          ),
+          content: Text(
+            'El reporte se guardó correctamente en:\n\n'
+            '📁 Descargas/Sabory/Reportes\n\n'
+            '📄 $fileName\n\n'
+            'Puedes cerrar esta ventana o compartir el reporte ahora.',
+            style: const TextStyle(fontSize: 16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cerrar'),
+            ),
+            FilledButton.icon(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              icon: const Icon(Icons.share_outlined),
+              label: const Text('Compartir'),
+            ),
+          ],
+        ),
+      );
+
+      if (shareFile == true) {
+        final tempDir = await getTemporaryDirectory();
+        final tempFile = File(p.join(tempDir.path, fileName));
+        await tempFile.writeAsBytes(excelBytes, flush: true);
+
+        await SharePlus.instance.share(
+          ShareParams(
+            files: [XFile(tempFile.path)],
+            subject: 'Reporte Sabory',
+            text: 'Reporte generado desde Sabory.',
+          ),
+        );
+      }
+    }
   } catch (e) {
-
     if (mounted) {
-
       showMessage(
-
         context,
-
         'No se pudo generar el Excel: $e',
-
       );
-
     }
-
   } finally {
-
     if (mounted) {
-
       setState(() => exporting = false);
-
     }
-
   }
-
 }
-
 
 
   @override
