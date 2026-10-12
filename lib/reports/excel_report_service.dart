@@ -263,65 +263,128 @@ class _SaboryReportDialogState extends State<SaboryReportDialog> {
   }
 
   Future<void> exportExcel() async {
-    final hasSelection = includeSummary || includeSales || includeExpenses || includeReceivables || includePayables || includePayments;
-    if (!hasSelection) {
-      showMessage(context, 'Selecciona al menos una opción para el reporte.');
-      return;
+  final hasSelection =
+      includeSummary ||
+      includeSales ||
+      includeExpenses ||
+      includeReceivables ||
+      includePayables ||
+      includePayments;
+
+  if (!hasSelection) {
+    showMessage(
+      context,
+      'Selecciona al menos una opción para el reporte.',
+    );
+    return;
+  }
+
+  setState(() => exporting = true);
+
+  try {
+    final range = selectedRange;
+    final book = xls.Excel.createExcel();
+
+    if (includeSummary) buildSummary(book, range);
+    if (includeSales) buildSales(book, range);
+    if (includeExpenses) buildExpenses(book, range);
+    if (includeReceivables) buildReceivables(book, range);
+    if (includePayables) buildPayables(book, range);
+    if (includePayments) buildPayments(book, range);
+
+    if (book.tables.containsKey('Sheet1') &&
+        book.tables.length > 1) {
+      book.delete('Sheet1');
     }
 
-    setState(() => exporting = true);
-    try {
-      final range = selectedRange;
-      final book = xls.Excel.createExcel();
-      if (includeSummary) buildSummary(book, range);
-      if (includeSales) buildSales(book, range);
-      if (includeExpenses) buildExpenses(book, range);
-      if (includeReceivables) buildReceivables(book, range);
-      if (includePayables) buildPayables(book, range);
-      if (includePayments) buildPayments(book, range);
+    final bytes = book.encode();
 
-      if (book.tables.containsKey('Sheet1') && book.tables.length > 1) book.delete('Sheet1');
-      final bytes = book.encode();
-      if (bytes == null) throw Exception('No se pudo crear el archivo Excel.');
+    if (bytes == null) {
+      throw Exception('No se pudo crear el archivo Excel.');
+    }
 
-      final stamp = '${range.start.year}${range.start.month.toString().padLeft(2, '0')}${range.start.day.toString().padLeft(2, '0')}_${range.end.year}${range.end.month.toString().padLeft(2, '0')}${range.end.day.toString().padLeft(2, '0')}';
+    final stamp =
+        '${range.start.year}'
+        '${range.start.month.toString().padLeft(2, '0')}'
+        '${range.start.day.toString().padLeft(2, '0')}_'
+        '${range.end.year}'
+        '${range.end.month.toString().padLeft(2, '0')}'
+        '${range.end.day.toString().padLeft(2, '0')}';
+
+    final fileName = 'Sabory_Reporte_$stamp.xlsx';
+    final excelBytes = Uint8List.fromList(bytes);
+
+    if (kIsWeb) {
+      // WEB: mantiene la descarga que ya funciona.
       await FileSaver.instance.saveFile(
         name: 'Sabory_Reporte_$stamp',
-        bytes: Uint8List.fromList(bytes),
+        bytes: excelBytes,
         fileExtension: 'xlsx',
         mimeType: MimeType.microsoftExcel,
       );
+    } else {
+      // ANDROID: abre el menú nativo para compartir/guardar.
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [
+            XFile.fromData(
+              excelBytes,
+              mimeType:
+                  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ),
+          ],
+          fileNameOverrides: [fileName],
+          subject: 'Reporte Sabory',
+          text: 'Reporte generado desde Sabory.',
+        ),
+      );
+    }
 
-      if (mounted) {
-        await showDialog<void>(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: const Row(
-              children: [
-                Icon(Icons.check_circle_outline, color: Colors.green),
-                SizedBox(width: 10),
-                Expanded(child: Text('Reporte generado')),
-              ],
-            ),
-            content: Text(
-              'Excel generado correctamente: Sabory_Reporte_$stamp.xlsx',
-              style: const TextStyle(fontSize: 16),
-            ),
-            actions: [
-              FilledButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Aceptar'),
+    if (mounted) {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(
+                Icons.check_circle_outline,
+                color: Colors.green,
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text('Reporte generado'),
               ),
             ],
           ),
-        );
-      }
-    } catch (e) {
-      if (mounted) showMessage(context, 'No se pudo generar el Excel: $e');
-    } finally {
-      if (mounted) setState(() => exporting = false);
+          content: Text(
+            kIsWeb
+                ? 'Excel generado correctamente: $fileName'
+                : 'El reporte fue generado correctamente. '
+                    'Puedes guardarlo o compartirlo desde las opciones de tu teléfono.',
+            style: const TextStyle(fontSize: 16),
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Aceptar'),
+            ),
+          ],
+        ),
+      );
+    }
+  } catch (e) {
+    if (mounted) {
+      showMessage(
+        context,
+        'No se pudo generar el Excel: $e',
+      );
+    }
+  } finally {
+    if (mounted) {
+      setState(() => exporting = false);
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {

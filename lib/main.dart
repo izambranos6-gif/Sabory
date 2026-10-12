@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 import 'data/web_memory_service.dart';
+import 'package:share_plus/share_plus.dart';
 
 part 'models/app_models.dart';
 part 'data/app_database.dart';
@@ -127,12 +128,12 @@ class _MainScreenState
   int currentIndex = 0;
 
   final pages = const [
-    HomePage(),
-    ProductsPage(),
-    SalesPage(),
-    ExpensesPage(),
-    UtilitiesPage(),
-  ];
+  HomePage(),
+  ProductsPage(),
+  SalesPage(),
+  ExpensesPage(),
+  UtilitiesPage(),
+];
 
   final titles = const [
     'Inicio',
