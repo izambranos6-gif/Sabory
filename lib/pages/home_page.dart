@@ -4,72 +4,35 @@ part of '../main.dart';
 // INICIO
 // ============================================================
 
-class HomePage
-    extends StatelessWidget {
-  const HomePage({
-    super.key,
-  });
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: appStore,
       builder: (context, _) {
-        final today =
-            dateOnly(
-          DateTime.now(),
-        );
-
-        final salesToday =
-            appStore.salesTotalBetween(
-          today,
-          today,
-        );
-
-        final expensesToday =
-            appStore.expenseTotalBetween(
-          today,
-          today,
-        );
-
-        final utilityToday =
-            salesToday -
-                expensesToday;
-
-        final openSales =
-            appStore.sales
-                .where(
-                  (sale) =>
-                      sale.status ==
-                      'Abierta',
-                )
-                .length;
+        final today = dateOnly(DateTime.now());
+        final salesToday = appStore.salesTotalBetween(today, today);
+        final expensesToday = appStore.expenseTotalBetween(today, today);
+        final utilityToday = salesToday - expensesToday;
+        final openSales = appStore.sales.where((sale) => sale.status == 'Abierta').length;
 
         return ListView(
-          padding:
-              const EdgeInsets.all(
-            16,
-          ),
+          padding: const EdgeInsets.all(16),
           children: [
-            const Text(
-              '🍽️ Control del Comedor',
-              style: TextStyle(
-                fontSize: 27,
-                fontWeight:
-                    FontWeight.bold,
-              ),
+           
+           const Text(
+             '🍽️ Control del Comedor',
+              style: TextStyle(fontSize: 27, fontWeight: FontWeight.bold),
             ),
+
 
             const SizedBox(height: 5),
 
             Text(
               'Resumen de hoy • ${formatDate(today)}',
-              style: TextStyle(
-                color:
-                    Colors.grey.shade600,
-              ),
+              style: TextStyle(color: Colors.grey.shade600),
             ),
 
             const SizedBox(height: 20),
@@ -78,23 +41,17 @@ class HomePage
               children: [
                 Expanded(
                   child: SummaryCard(
-                    title:
-                        'Ventas de hoy',
-                    value:
-                        money(salesToday),
-                    icon:
-                        Icons.attach_money,
+                    title: 'Ventas de hoy',
+                    value: money(salesToday),
+                    icon: Icons.attach_money,
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: SummaryCard(
-                    title:
-                        'Gastos de hoy',
-                    value:
-                        money(expensesToday),
-                    icon:
-                        Icons.shopping_cart,
+                    title: 'Gastos de hoy',
+                    value: money(expensesToday),
+                    icon: Icons.shopping_cart,
                   ),
                 ),
               ],
@@ -107,10 +64,7 @@ class HomePage
                 Expanded(
                   child: SummaryCard(
                     title: 'Por cobrar',
-                    value: money(
-                      appStore
-                          .totalReceivable,
-                    ),
+                    value: money(appStore.totalReceivable),
                     icon: Icons.person,
                   ),
                 ),
@@ -118,9 +72,7 @@ class HomePage
                 Expanded(
                   child: SummaryCard(
                     title: 'Por pagar',
-                    value: money(
-                      appStore.totalPayable,
-                    ),
+                    value: money(appStore.totalPayable),
                     icon: Icons.store,
                   ),
                 ),
@@ -131,32 +83,19 @@ class HomePage
 
             Card(
               child: ListTile(
-                leading:
-                    const CircleAvatar(
-                  child: Icon(
-                    Icons.pending_actions,
-                  ),
+                leading: const CircleAvatar(
+                  child: Icon(Icons.pending_actions),
                 ),
-                title:
-                    const Text(
+                title: const Text(
                   'Pedidos abiertos',
-                  style: TextStyle(
-                    fontWeight:
-                        FontWeight.bold,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-                subtitle:
-                    const Text(
+                subtitle: const Text(
                   'Ventas que todavía pueden recibir productos',
                 ),
                 trailing: Text(
                   '$openSales',
-                  style:
-                      const TextStyle(
-                    fontSize: 22,
-                    fontWeight:
-                        FontWeight.bold,
-                  ),
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -164,93 +103,47 @@ class HomePage
             const SizedBox(height: 15),
 
             TotalBox(
-              title:
-                  utilityToday >= 0
-                      ? 'UTILIDAD DE HOY'
-                      : 'PÉRDIDA DE HOY',
+              title: utilityToday >= 0 ? 'UTILIDAD DE HOY' : 'PÉRDIDA DE HOY',
               value: utilityToday,
-              subtitle:
-                  'Ventas - Gastos',
+              subtitle: 'Ventas - Gastos',
             ),
 
             const SizedBox(height: 22),
 
             const SectionTitle(
               icon: Icons.restaurant,
-              title:
-                  'Productos vendidos hoy',
+              title: 'Productos vendidos hoy',
             ),
 
             CategoryCard(
               emoji: '☕',
               title: 'Desayunos',
-              quantity: appStore
-                  .quantityByCategoryBetween(
-                'Desayuno',
-                today,
-                today,
-              ),
-              amount: appStore
-                  .amountByCategoryBetween(
-                'Desayuno',
-                today,
-                today,
-              ),
+              quantity: appStore.quantityByCategoryBetween('Desayuno', today, today),
+              amount: appStore.amountByCategoryBetween('Desayuno', today, today),
             ),
 
             CategoryCard(
               emoji: '🍛',
-              title:
-                  'Almuerzos completos',
-              quantity: appStore
-                  .quantityByCategoryBetween(
-                'Almuerzo',
-                today,
-                today,
-              ),
-              amount: appStore
-                  .amountByCategoryBetween(
-                'Almuerzo',
-                today,
-                today,
-              ),
+              title: 'Almuerzos completos',
+              quantity: appStore.quantityByCategoryBetween('Almuerzo', today, today),
+              amount: appStore.amountByCategoryBetween('Almuerzo', today, today),
             ),
 
             CategoryCard(
               emoji: '🍽️',
-              title:
-                  'Platos a la carta',
-              quantity: appStore
-                  .quantityByCategoryBetween(
-                'Platos a la carta',
-                today,
-                today,
-              ),
-              amount: appStore
-                  .amountByCategoryBetween(
-                'Platos a la carta',
-                today,
-                today,
-              ),
+              title: 'Platos a la carta',
+              quantity: appStore.quantityByCategoryBetween('Platos a la carta', today, today),
+              amount: appStore.amountByCategoryBetween('Platos a la carta', today, today),
             ),
 
             CategoryCard(
               emoji: '🥤',
-              title:
-                  'Bebidas / Adicionales',
-              quantity: appStore
-                  .quantityByCategoryBetween(
-                'Bebidas / Adicionales',
-                today,
-                today,
-              ),
-              amount: appStore
-                  .amountByCategoryBetween(
-                'Bebidas / Adicionales',
-                today,
-                today,
-              ),
+              title: 'Bebidas / Adicionales',
+              quantity: appStore.quantityByCategoryBetween('Bebidas / Adicionales', today, today),
+              amount: appStore.amountByCategoryBetween('Bebidas / Adicionales', today, today),
             ),
+
+            const SizedBox(height: 20),
           ],
         );
       },
@@ -258,10 +151,69 @@ class HomePage
   }
 }
 
+// ============================================================
+// CONFIGURACIÓN
+// ============================================================
+
+class SettingsPage extends StatelessWidget {
+  const SettingsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Configuración'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          const Text(
+            '⚙️ Configuración',
+            style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+          ),
+
+          const SizedBox(height: 6),
+
+          Text(
+            'Administra las opciones de Sabory.',
+            style: TextStyle(color: Colors.grey.shade600),
+          ),
+
+          const SizedBox(height: 25),
+
+          const SectionTitle(
+            icon: Icons.security_outlined,
+            title: 'Datos y seguridad',
+          ),
+
+          Card(
+            child: ListTile(
+              leading: const CircleAvatar(
+                child: Icon(Icons.cloud_upload_outlined),
+              ),
+              title: const Text(
+                'Respaldo y restauración',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: const Text(
+                'Protege y recupera la información de Sabory',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const BackupPage()),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // La pantalla de Comidas está separada en pages/products_page.dart.
-
 // La pantalla de Ventas está separada en pages/sales_page.dart.
-
 // La pantalla de Gastos está separada en pages/expenses_page.dart.
-
 // La pantalla de Utilidad está separada en pages/utilities_page.dart.
