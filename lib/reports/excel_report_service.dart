@@ -637,7 +637,7 @@ class _SaboryReportDialogState extends State<SaboryReportDialog> {
         bytes: excelBytes,
         fileExtension: 'xlsx',
         mimeType: MimeType.microsoftExcel,
-        subfolder: 'Sabory/Reportes',
+        subfolder: 'Sabory',
       );
 
       if (!mounted) return;
@@ -654,7 +654,7 @@ class _SaboryReportDialogState extends State<SaboryReportDialog> {
           ),
           content: Text(
             'El reporte se guardó correctamente en:\n\n'
-            '📁 Descargas/Sabory/Reportes\n\n'
+            '📁 Descargas/Sabory\n\n'
             '📄 $fileName\n\n'
             'Puedes cerrar esta ventana o compartir el reporte ahora.',
             style: const TextStyle(fontSize: 16),
